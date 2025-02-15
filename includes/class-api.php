@@ -74,4 +74,63 @@ class Barcelona_Matches_API {
     
         return true;
     }
+
+    public function fetch_standings() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'barcelona_standings';
+    
+        $competition_id = 2014; // ID чемпионата Испании (La Liga)
+        $url = "https://api.football-data.org/v4/competitions/$competition_id/standings";
+    
+        $args = [
+            'headers' => [
+                'X-Auth-Token' => $this->api_key,
+            ],
+        ];
+    
+        $response = wp_remote_get($url, $args);
+    
+        if (is_wp_error($response)) {
+            error_log('Ошибка API: ' . $response->get_error_message());
+            return false;
+        }
+    
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+    
+        if (empty($data['standings'][0]['table'])) {
+            error_log('Нет данных о турнирной таблице в ответе API.');
+            return false;
+        }
+    
+        // Очистка таблицы перед сохранением новых данных
+        $wpdb->query("TRUNCATE TABLE $table_name");
+    
+        foreach ($data['standings'][0]['table'] as $team) {
+            $wpdb->insert(
+                $table_name,
+                [
+                    'position' => $team['position'],
+                    'team_name' => $team['team']['name'],
+                    'played_games' => $team['playedGames'],
+                    'won' => $team['won'],
+                    'draw' => $team['draw'],
+                    'lost' => $team['lost'],
+                    'points' => $team['points'],
+                    'goals_for' => $team['goalsFor'],
+                    'goals_against' => $team['goalsAgainst'],
+                    'goal_difference' => $team['goalDifference'],
+                ]
+            );
+    
+            if ($wpdb->last_error) {
+                error_log('Ошибка при вставке данных: ' . $wpdb->last_error);
+            }
+        }
+    
+        // Сбрасываем флаг, если данные успешно загружены
+        update_option('barcelona_standings_table_empty', false);
+    
+        return true;
+    }
 }
