@@ -133,4 +133,58 @@ class Barcelona_Matches_API {
     
         return true;
     }
+
+    public function fetch_team_players() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'barcelona_players';
+    
+        $team_id = 81; // ID "Барселоны"
+        $url = "https://api.football-data.org/v4/teams/$team_id";
+    
+        $args = [
+            'headers' => [
+                'X-Auth-Token' => $this->api_key,
+            ],
+        ];
+    
+        $response = wp_remote_get($url, $args);
+    
+        if (is_wp_error($response)) {
+            error_log('Ошибка API: ' . $response->get_error_message());
+            return false;
+        }
+    
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+    
+        if (empty($data['squad'])) {
+            error_log('Нет данных о команде в ответе API.');
+            return false;
+        }
+    
+        // Очистка таблицы перед сохранением новых данных
+        $wpdb->query("TRUNCATE TABLE $table_name");
+    
+        foreach ($data['squad'] as $player) {
+            $wpdb->insert(
+                $table_name,
+                [
+                    'player_name' => $player['name'],
+                    'position' => $player['position'],
+                    'nationality' => $player['nationality'],
+                    'date_of_birth' => $player['dateOfBirth'],
+                    'shirt_number' => $player['shirtNumber'],
+                ]
+            );
+    
+            if ($wpdb->last_error) {
+                error_log('Ошибка при вставке данных: ' . $wpdb->last_error);
+            }
+        }
+    
+        // Сбрасываем флаг, если данные успешно загружены
+        update_option('barcelona_players_table_empty', false);
+    
+        return true;
+    }
 }

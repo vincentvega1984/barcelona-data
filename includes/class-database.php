@@ -8,6 +8,7 @@ class Barcelona_Matches_Database {
         global $wpdb;
         $matches_table_name = $wpdb->prefix . 'barcelona_matches';
         $standings_table_name = $wpdb->prefix . 'barcelona_standings';
+        $players_table_name = $wpdb->prefix . 'barcelona_players';
         $charset_collate = $wpdb->get_charset_collate();
     
         // Таблица для матчей
@@ -38,10 +39,22 @@ class Barcelona_Matches_Database {
             goal_difference int(11),
             PRIMARY KEY (id)
         ) $charset_collate;";
+
+        // Таблица для игроков
+        $sql_players = "CREATE TABLE $players_table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            player_name varchar(255) NOT NULL,
+            position varchar(50),
+            nationality varchar(50),
+            date_of_birth date,
+            shirt_number int(11),
+            PRIMARY KEY (id)
+        ) $charset_collate;";
     
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_matches);
         dbDelta($sql_standings);
+        dbDelta($sql_players);
     
         // Проверка на ошибки
         if (!empty($wpdb->last_error)) {
@@ -58,6 +71,12 @@ class Barcelona_Matches_Database {
         $standings_rows = $wpdb->get_var("SELECT COUNT(*) FROM $standings_table_name");
         if ($standings_rows == 0) {
             update_option('barcelona_standings_table_empty', true);
+        }
+
+        // Проверка, пуста ли таблица игроков
+        $players_rows = $wpdb->get_var("SELECT COUNT(*) FROM $players_table_name");
+        if ($players_rows == 0) {
+            update_option('barcelona_players_table_empty', true);
         }
     }
 
@@ -86,7 +105,24 @@ class Barcelona_Matches_Database {
 
     public static function drop_table() {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'barcelona_matches';
-        $wpdb->query("DROP TABLE IF EXISTS $table_name");
+    
+        // Удаляем таблицу матчей
+        $matches_table_name = $wpdb->prefix . 'barcelona_matches';
+        $wpdb->query("DROP TABLE IF EXISTS $matches_table_name");
+    
+        // Удаляем таблицу турнирной таблицы
+        $standings_table_name = $wpdb->prefix . 'barcelona_standings';
+        $wpdb->query("DROP TABLE IF EXISTS $standings_table_name");
+    
+        // Удаляем таблицу игроков
+        $players_table_name = $wpdb->prefix . 'barcelona_players';
+        $wpdb->query("DROP TABLE IF EXISTS $players_table_name");
+    
+        // Логируем результат
+        if (!empty($wpdb->last_error)) {
+            error_log('Ошибка при удалении таблиц: ' . $wpdb->last_error);
+        } else {
+            error_log('Таблицы успешно удалены.');
+        }
     }
 }

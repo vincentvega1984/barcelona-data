@@ -77,47 +77,67 @@ class Barcelona_Matches_Admin {
         global $wpdb;
         $matches_table_name = $wpdb->prefix . 'barcelona_matches';
         $standings_table_name = $wpdb->prefix . 'barcelona_standings';
-
+        $players_table_name = $wpdb->prefix . 'barcelona_players';
+    
         // Обработка ручного запуска обновления матчей
         if (isset($_POST['barcelona_matches_manual_update'])) {
             $api = new Barcelona_Matches_API();
             $result = $api->fetch_matches();
-
+    
             if ($result) {
                 echo '<div class="notice notice-success"><p>Данные матчей успешно обновлены.</p></div>';
             } else {
                 echo '<div class="notice notice-error"><p>Ошибка при обновлении данных матчей. Проверьте лог ошибок.</p></div>';
             }
         }
-
+    
         // Обработка ручного запуска обновления турнирной таблицы
         if (isset($_POST['barcelona_standings_manual_update'])) {
             $api = new Barcelona_Matches_API();
             $result = $api->fetch_standings();
-
+    
             if ($result) {
                 echo '<div class="notice notice-success"><p>Данные турнирной таблицы успешно обновлены.</p></div>';
             } else {
                 echo '<div class="notice notice-error"><p>Ошибка при обновлении данных турнирной таблицы. Проверьте лог ошибок.</p></div>';
             }
         }
-
+    
+        // Обработка ручного запуска загрузки данных о команде
+        if (isset($_POST['barcelona_team_manual_update'])) {
+            $api = new Barcelona_Matches_API();
+            $result = $api->fetch_team_players();
+    
+            if ($result) {
+                echo '<div class="notice notice-success"><p>Данные о команде успешно обновлены.</p></div>';
+            } else {
+                echo '<div class="notice notice-error"><p>Ошибка при обновлении данных о команде. Проверьте лог ошибок.</p></div>';
+            }
+        }
+    
         // Проверка данных в таблицах
         $matches = $wpdb->get_results("SELECT * FROM $matches_table_name");
         $standings = $wpdb->get_results("SELECT * FROM $standings_table_name");
-
+        $players = $wpdb->get_results("SELECT * FROM $players_table_name");
+    
         if (!empty($matches)) {
-            echo '<div class="notice notice-success">Данные матчей:</div>';
+            echo '<div class="notice notice-success"><p>Данные матчей загружены.</p></div>';
         } else {
             echo '<div class="notice notice-warning"><p>Таблица матчей пуста. Проверьте лог ошибок.</p></div>';
         }
-
+    
         if (!empty($standings)) {
-            echo '<div class="notice notice-success">Данные турнирной таблицы:</div>';
+            echo '<div class="notice notice-success"><p>Данные турнирной таблицы загружены.</p></div>';
         } else {
             echo '<div class="notice notice-warning"><p>Таблица турнирной таблицы пуста. Проверьте лог ошибок.</p></div>';
         }
-
+    
+        if (!empty($players)) {
+            echo '<div class="notice notice-success"><p>Данные о команде загружены.</p></div>';
+        } else {
+            echo '<div class="notice notice-warning"><p>Таблица игроков пуста. Проверьте лог ошибок.</p></div>';
+        }
+    
         ?>
         <div class="wrap">
             <h1>Barcelona Matches</h1>
@@ -128,15 +148,20 @@ class Barcelona_Matches_Admin {
                 submit_button();
                 ?>
             </form>
-
+    
             <form method="post">
                 <input type="hidden" name="barcelona_matches_manual_update" value="1">
                 <?php submit_button('Обновить данные матчей вручную'); ?>
             </form>
-
+    
             <form method="post">
                 <input type="hidden" name="barcelona_standings_manual_update" value="1">
                 <?php submit_button('Обновить турнирную таблицу вручную'); ?>
+            </form>
+    
+            <form method="post">
+                <input type="hidden" name="barcelona_team_manual_update" value="1">
+                <?php submit_button('Обновить данные о команде вручную'); ?>
             </form>
         </div>
         <?php
